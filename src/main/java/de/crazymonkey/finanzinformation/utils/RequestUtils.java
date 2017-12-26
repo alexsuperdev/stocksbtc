@@ -10,13 +10,13 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import de.crazymonkey.finanzinformation.entity.AktienSymbol;
-
 public class RequestUtils {
 
+	/**
+	 * Creates Get Request to Url
+	 * @param url
+	 * @return
+	 */
 	public static String get(String url) {
 		CloseableHttpClient httpclient = HttpClients.createDefault();
 		HttpEntity entity = null;

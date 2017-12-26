@@ -35,12 +35,12 @@
 			<version>4.12</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- <dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-test</artifactId>
-			<version>4.2.9.RELEASE</version>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency> -->
+			<version>1.5.9.RELEASE</version>
+		</dependency>
 	</dependencies>
 
 	<build>

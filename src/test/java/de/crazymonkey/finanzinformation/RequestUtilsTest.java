@@ -1,4 +1,4 @@
-package finanzinformation;
+package de.crazymonkey.finanzinformation;
 
 import org.junit.Assert;
 import org.junit.Test;

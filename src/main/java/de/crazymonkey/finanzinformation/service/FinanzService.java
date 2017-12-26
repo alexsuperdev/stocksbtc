@@ -7,21 +7,20 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.crazymonkey.finanzinformation.constants.Endpoints;
 import de.crazymonkey.finanzinformation.entity.AktienSymbol;
 import de.crazymonkey.finanzinformation.utils.RequestUtils;
 
 @Service
 public class FinanzService {
 
-	private static String endPointSymbol = "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query=####&region=US&lang=en-US&row=ALL&callback=YAHOO.Finance.SymbolSuggest.ssCallback";
+	// public void getFirmdataForCondition() {
+	//
+	// }
 
-	public void getFirmdataForCondition() {
+	public AktienSymbol getSymbolForFirmname(String firmenName) {
 
-	}
-
-	private AktienSymbol getSymbolForFirmname(String firmenName) {
-
-		String urlFirmenSymbol = endPointSymbol.replace("####", firmenName);
+		String urlFirmenSymbol = Endpoints.AKTIENSYMBOL.getUrl().replace("####", firmenName);
 		String serverResponse = RequestUtils.get(urlFirmenSymbol);
 		serverResponse = serverResponse.substring(serverResponse.indexOf("symbol") - 2,
 				serverResponse.indexOf("}") + 1);
