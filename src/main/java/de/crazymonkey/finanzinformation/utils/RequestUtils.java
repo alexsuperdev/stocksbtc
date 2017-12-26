@@ -10,24 +10,28 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.crazymonkey.finanzinformation.entity.AktienSymbol;
+
 public class RequestUtils {
 
 	public static String get(String url) {
 		CloseableHttpClient httpclient = HttpClients.createDefault();
 		HttpEntity entity = null;
 		HttpGet httpGet = new HttpGet(url);
-		String text = null;
+		String serverResponse = null;
 		try {
 			CloseableHttpResponse response1 = httpclient.execute(httpGet);
 			entity = response1.getEntity();
-
 			try (Scanner scanner = new Scanner(entity.getContent(), StandardCharsets.UTF_8.name())) {
-				text = scanner.useDelimiter("\\A").next();
+				serverResponse = scanner.useDelimiter("\\A").next();
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return text;
+		return serverResponse;
 	}
 }

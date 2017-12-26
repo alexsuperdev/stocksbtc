@@ -1,7 +1,13 @@
 package de.crazymonkey.finanzinformation.service;
 
+import java.io.IOException;
+
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import de.crazymonkey.finanzinformation.entity.AktienSymbol;
 import de.crazymonkey.finanzinformation.utils.RequestUtils;
 
 @Service
@@ -13,24 +19,21 @@ public class FinanzService {
 
 	}
 
-	private String getSymbolForFirmname(String firmenName) {
+	private AktienSymbol getSymbolForFirmname(String firmenName) {
 
 		String urlFirmenSymbol = endPointSymbol.replace("####", firmenName);
-		String text = RequestUtils.get(urlFirmenSymbol);
-		;
-		// $reqString =
-		// "http://d.yimg.com/autoc.finance.yahoo.com/autoc?query=####&region=US&lang=en-US&row=ALL&callback=YAHOO.Finance.SymbolSuggest.ssCallback";
-		// $firma = str_replace(" ", "%20", $firma);
-		// $reqString = str_replace("####", $firma, $reqString);
-		// $responseSer = file_get_contents(($reqString));
-		// $cleanResp = substr($responseSer, strpos($responseSer, "({") + 1,
-		// strlen($responseSer) - (strpos($responseSer, "({") + 3));
-		// $resArr = json_decode($cleanResp, true);
-		// if (isset($resArr["ResultSet"]["Result"][0]["symbol"])) {
-		// return $resArr["ResultSet"]["Result"][0]["symbol"];
-		// } else {
-		// return null;
-		// }
-		return text;
+		String serverResponse = RequestUtils.get(urlFirmenSymbol);
+		serverResponse = serverResponse.substring(serverResponse.indexOf("symbol") - 2,
+				serverResponse.indexOf("}") + 1);
+		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		try {
+			AktienSymbol aktienSymbol = mapper.readValue(serverResponse, AktienSymbol.class);
+			return aktienSymbol;
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			throw new RuntimeException();
+		}
+
 	}
+
 }
