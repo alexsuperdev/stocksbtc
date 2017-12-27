@@ -1,5 +1,6 @@
 package de.crazymonkey.finanzinformation;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,8 +23,15 @@ public class FinanzinformationControllerTest {
 	private MockMvc mvc;
 
 	@Test
-	public void symbol() throws Exception {
-		this.mvc.perform(get("/getSymbol").param("firmName", "Apple")).andExpect(status().isOk())
+	public void getSymbol() throws Exception {
+		this.mvc.perform(get("/getSymbol").with(httpBasic("financeapp", "financeapp")).param("firmName", "Apple"))
+				.andExpect(status().isOk())
 				.andExpect(content().string(CoreMatchers.containsString("symbol\":\"AAPL\",\"name\":\"Apple Inc.")));
+	}
+	
+	@Test
+	public void getSymbolUnauthorized() throws Exception {
+		this.mvc.perform(get("/getSymbol").with(httpBasic("financeapp1", "financeapp1")).param("firmName", "Apple"))
+				.andExpect(status().is(401));
 	}
 }
