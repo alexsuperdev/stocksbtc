@@ -17,9 +17,7 @@ public class FinanzinformationProfile {
 	public Object logExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
 		System.out.println(joinPoint.getSignature().getName() + " starting");
 		long start = System.nanoTime();
-
 		Object proceed = joinPoint.proceed();
-
 		double executionTime = (System.nanoTime() - start);
 		double sekundenRundung = Math.pow(10, 9);
 		executionTime = executionTime / sekundenRundung;
