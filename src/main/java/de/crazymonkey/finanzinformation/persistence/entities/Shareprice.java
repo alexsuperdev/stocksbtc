@@ -21,7 +21,7 @@ public class Shareprice {
 
 	private float price;
 
-	@Column(name = "pricedate")
+	@Column(name = "pricedate", columnDefinition = "DATE")
 	private LocalDate priceDate;
 
 	@Column(name = "created")

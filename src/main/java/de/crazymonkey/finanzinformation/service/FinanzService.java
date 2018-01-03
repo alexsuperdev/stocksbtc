@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,12 +22,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import de.crazymonkey.finanzinformation.annotation.LogExecutionTime;
 import de.crazymonkey.finanzinformation.constants.Endpoints;
+import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
 import de.crazymonkey.finanzinformation.entity.AktienSymbol;
 import de.crazymonkey.finanzinformation.entity.HistoricalData;
-import de.crazymonkey.finanzinformation.persistence.SharePriceRepository;
-import de.crazymonkey.finanzinformation.persistence.ShareRepository;
 import de.crazymonkey.finanzinformation.persistence.entities.Share;
 import de.crazymonkey.finanzinformation.persistence.entities.Shareprice;
+import de.crazymonkey.finanzinformation.repository.SharePriceRepository;
+import de.crazymonkey.finanzinformation.repository.ShareRepository;
 
 @Service
 public class FinanzService {
@@ -45,7 +47,7 @@ public class FinanzService {
 
 	private static int amountYearsInPast = 5;
 
-	public AktienSymbol getSymbolForFirmname(String firmenName) {
+	private AktienSymbol getSymbolForFirmname(String firmenName) {
 
 		String urlFirmenSymbol = Endpoints.AKTIENSYMBOL.getUrl().replace("####", firmenName);
 		ResponseEntity<String> response = restTemplate.getForEntity(urlFirmenSymbol, String.class);
@@ -97,7 +99,40 @@ public class FinanzService {
 		return historicalData;
 	}
 
-	public List<Shareprice> mittelWerteErmittelnMonat(Map<LocalDate, HistoricalData> aktienPreise, Integer shareId) {
+	@LogExecutionTime
+	public List<Shareprice> getSharePrices(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
+		Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
+		List<Share> shares = shareRepository.findBySymbol(aktienSymbol);
+		List<Shareprice> sharePrices;
+		if (shares.size() == 0) {
+			AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
+			Share share = new Share();
+			share.setStock(symbolForFirmname.getIndex());
+			share.setSymbol(symbolForFirmname.getSymbol());
+			share.setSharename(symbolForFirmname.getName());
+			Share shareSaved = shareRepository.save(share);
+			historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
+			sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, shareSaved.getId());
+			sharePriceRepository.save(sharePrices);
+		} else {
+			sharePrices = sharePriceRepository.findByShareId(shares.get(0).getId());
+		}
+		LocalDate endDate = null;
+		if (TimeSprektrum.WEEK.equals(timeTyp)) {
+			endDate = LocalDate.now().minusWeeks(amount);
+		} else if (TimeSprektrum.MONTH.equals(timeTyp)) {
+			endDate = LocalDate.now().minusMonths(amount);
+		} else if (TimeSprektrum.YEAR.equals(timeTyp)) {
+			endDate = LocalDate.now().minusYears(amount);
+		}
+		// Sehr häslich
+		final LocalDate endDateFinal = endDate;
+		List<Shareprice> sharePricesUntilDate = sharePrices.stream()
+				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(endDateFinal)).collect(Collectors.toList());
+		return sharePricesUntilDate;
+	}
+
+	private List<Shareprice> mittelWerteErmittelnMonat(Map<LocalDate, HistoricalData> aktienPreise, Integer shareId) {
 
 		List<Shareprice> sharePrices = new ArrayList<>();
 		for (Entry<LocalDate, HistoricalData> entry : aktienPreise.entrySet()) {
@@ -111,25 +146,4 @@ public class FinanzService {
 		return sharePrices;
 	}
 
-	@LogExecutionTime
-	public List<Shareprice> getDataShare(String aktienSymbol) {
-		Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
-		List<Share> shares = shareRepository.findBySymbol(aktienSymbol);
-		if (shares.size() == 0) {
-			AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
-			Share share = new Share();
-			share.setStock(symbolForFirmname.getIndex());
-			share.setSymbol(symbolForFirmname.getSymbol());
-			share.setSharename(symbolForFirmname.getName());
-			Share shareSaved = shareRepository.save(share);
-			historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
-			List<Shareprice> sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, shareSaved.getId());
-			sharePriceRepository.save(sharePrices);
-			return sharePrices;
-
-		} else {
-			List<Shareprice> sharePrices = sharePriceRepository.findByShareId(shares.get(0).getId());
-			return sharePrices;
-		}
-	}
 }

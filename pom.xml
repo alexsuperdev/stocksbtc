@@ -104,15 +104,12 @@
 				<version>3.2.0</version>
 				<configuration>
 					<failOnMissingWebXml>false</failOnMissingWebXml>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+					</archive>
 				</configuration>
-				<!-- <executions> <execution> <id>prepare-war</id> <phase>prepare-package</phase> 
-					<configuration> <archiveClasses>false</archiveClasses> <archive> <manifest> 
-					<addClasspath>true</addClasspath> <classpathPrefix /> </manifest> <manifestEntries> 
-					<Implementation-Build>${build.number}</Implementation-Build> <Implementation-Title>${project.name}</Implementation-Title> 
-					<Built-By>${user.name}</Built-By> <Built-OS>${os.name}</Built-OS> <Build-Date>${build.date}</Build-Date> 
-					</manifestEntries> </archive> <webResources> <resource> this is relative 
-					to the pom.xml directory <directory>./target/dist</directory> </resource> 
-					</webResources> </configuration> </execution> </executions> -->
 			</plugin>
 		</plugins>
 

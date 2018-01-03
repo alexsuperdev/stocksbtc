@@ -1,4 +1,4 @@
-package de.crazymonkey.finanzinformation.persistence;
+package de.crazymonkey.finanzinformation.repository;
 
 import java.util.List;
 

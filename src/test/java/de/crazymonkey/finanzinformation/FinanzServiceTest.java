@@ -11,12 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
 import de.crazymonkey.finanzinformation.entity.HistoricalData;
 import de.crazymonkey.finanzinformation.persistence.entities.Shareprice;
 import de.crazymonkey.finanzinformation.service.FinanzService;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-// @WebMvcTest(FinanzinformationController.class)
 @SpringBootTest
 public class FinanzServiceTest {
 
@@ -37,7 +37,7 @@ public class FinanzServiceTest {
 
 	@Test
 	public void getDataShare() {
-		List<Shareprice> dataShare = finanzService.getDataShare("MSFT");
-		Assert.assertEquals(1260, dataShare.size());
+		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.MONTH, 3);
+		Assert.assertEquals(63, dataShare.size());
 	}
 }
