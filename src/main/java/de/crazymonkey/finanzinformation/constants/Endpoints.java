@@ -5,7 +5,16 @@ public enum Endpoints {
 	AKTIENSYMBOL(
 			"http://d.yimg.com/autoc.finance.yahoo.com/autoc?query=####&region=US&lang=en-US&row=ALL&callback=YAHOO.Finance.SymbolSuggest.ssCallback"),
 	HISTORICALDATA(
-			"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=#symbol#&outputsize=full&apikey=#key#");
+			"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=#symbol#&outputsize=full&apikey=#key#"),
+	BTC_INTRADAY(
+			"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_INTRADAY&symbol=BTC&market=CNY&apikey=#key#"),
+//	BTC_DAILY(
+//			"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=#symbol#&market=CNY&apikey=#key#"),
+	BTC_DAILY(
+			"https://api.coindesk.com/v1/bpi/historical/close.json"),
+	
+	NEWSZEIT(
+			"http://api.zeit.de/keyword?q=*###*&limit=1");
 	
 	private String url;
 

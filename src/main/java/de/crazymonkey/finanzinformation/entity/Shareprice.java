@@ -1,4 +1,4 @@
-package de.crazymonkey.finanzinformation.persistence.entities;
+package de.crazymonkey.finanzinformation.entity;
 
 import java.sql.Timestamp;
 import java.time.LocalDate;
@@ -62,6 +62,12 @@ public class Shareprice {
 
 	public void setPriceDate(LocalDate priceDate) {
 		this.priceDate = priceDate;
+	}
+
+	@Override
+	public String toString() {
+		return "Shareprice [id=" + id + ", price=" + price + ", priceDate=" + priceDate + ", created=" + created
+				+ ", shareId=" + shareId + "]";
 	}
 
 }

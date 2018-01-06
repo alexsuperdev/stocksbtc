@@ -4,6 +4,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.LocalDate;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,5 +42,14 @@ public class FinanzinformationControllerTest {
 	public void getSharePrices() throws Exception {
 		this.mvc.perform(get("/getSharePrices").with(httpBasic("financeapp", "financeapp"))
 				.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "3")).andExpect(status().is(200));
+	}
+
+	@Test
+	public void getBtcHistorical() throws Exception {
+		LocalDate start = LocalDate.of(2017, 10, 1);
+		LocalDate end = LocalDate.of(2017, 12, 1);
+		this.mvc.perform(get("/getBtcHistorical").with(httpBasic("financeapp", "financeapp"))
+				.param("start", start.toString()).param("end", end.toString())).andExpect(status().is(200));
+
 	}
 }

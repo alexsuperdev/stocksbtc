@@ -1,4 +1,4 @@
-package de.crazymonkey.finanzinformation.entity;
+package de.crazymonkey.finanzinformation.alphavantage.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

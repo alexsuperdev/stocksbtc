@@ -5,12 +5,17 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+/**
+ * 
+ * @author Алексей
+ *
+ */
 @Configuration
 @ComponentScan(basePackages = "de.crazymonkey.finanzinformation")
 public class FinanzinformationConfiguration {
 
 	@Bean
-	public RestTemplate getYahooTemplate() {
+	public RestTemplate plainTemplate() {
 		RestTemplate restTemplate = new RestTemplate();
 		return restTemplate;
 	}

@@ -58,6 +58,12 @@
 			<version>${spring.boot.version}</version>
 		</dependency>
 
+		<!-- <dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>httpclient</artifactId>
+			<version>4.5.4</version>
+		</dependency> -->
+
 		<!-- Use MySQL Connector-J -->
 
 		<dependency>

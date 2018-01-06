@@ -15,20 +15,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import de.crazymonkey.finanzinformation.alphavantage.entity.AktienSymbol;
+import de.crazymonkey.finanzinformation.alphavantage.entity.HistoricalData;
 import de.crazymonkey.finanzinformation.annotation.LogExecutionTime;
+import de.crazymonkey.finanzinformation.coindesk.entity.HistoricalDataBtc;
 import de.crazymonkey.finanzinformation.constants.Endpoints;
 import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
-import de.crazymonkey.finanzinformation.entity.AktienSymbol;
-import de.crazymonkey.finanzinformation.entity.HistoricalData;
-import de.crazymonkey.finanzinformation.persistence.entities.Share;
-import de.crazymonkey.finanzinformation.persistence.entities.Shareprice;
+import de.crazymonkey.finanzinformation.entity.Share;
+import de.crazymonkey.finanzinformation.entity.Shareprice;
+import de.crazymonkey.finanzinformation.exception.FinanzinformationException;
 import de.crazymonkey.finanzinformation.repository.SharePriceRepository;
 import de.crazymonkey.finanzinformation.repository.ShareRepository;
+import de.crazymonkey.finanzinformation.util.RequestUtil;
 
 @Service
 public class FinanzService {
@@ -45,9 +47,12 @@ public class FinanzService {
 	@Autowired
 	private SharePriceRepository sharePriceRepository;
 
+	@Autowired
+	private RequestUtil requestUtil;
+
 	private static int amountYearsInPast = 5;
 
-	private AktienSymbol getSymbolForFirmname(String firmenName) {
+	public AktienSymbol getSymbolForFirmname(String firmenName) {
 
 		String urlFirmenSymbol = Endpoints.AKTIENSYMBOL.getUrl().replace("####", firmenName);
 		ResponseEntity<String> response = restTemplate.getForEntity(urlFirmenSymbol, String.class);
@@ -60,43 +65,32 @@ public class FinanzService {
 			AktienSymbol aktienSymbol = mapper.readValue(serverResponse, AktienSymbol.class);
 			return aktienSymbol;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			throw new RuntimeException();
+			throw new FinanzinformationException(e.getMessage());
 		}
 
 	}
 
 	@LogExecutionTime
 	public Map<LocalDate, HistoricalData> getHistoricalDataAktienSymbol(String aktienSymbol) {
+		ResponseEntity<String> response = requestUtil.createRequest(Endpoints.HISTORICALDATA, aktienSymbol);
+		JsonNode parseResponse = requestUtil.parseResponse(response, "Time Series (Daily)");
+		Map<LocalDate, HistoricalData> parseJSONFilter = convertAndFilter(parseResponse,
+				LocalDate.now().minusYears(amountYearsInPast), HistoricalData.class);
+		return parseJSONFilter;
+	}
 
-		String urlHistData = Endpoints.HISTORICALDATA.getUrl();
-		urlHistData = urlHistData.replace("#symbol#", aktienSymbol);
-		urlHistData = urlHistData.replace("#key#", alphavantageKey);
-		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		JsonNode rootNode = null;
-		ResponseEntity<String> response = restTemplate.getForEntity(urlHistData, String.class);
-		Map<LocalDate, HistoricalData> historicalData = new LinkedHashMap<LocalDate, HistoricalData>();
-		try {
-			rootNode = mapper.readTree(response.getBody());
-			JsonNode result = rootNode.get("Time Series (Daily)");
-			result.fields().forEachRemaining(eintrag -> {
-				LocalDate dateEintrag = LocalDate.parse(eintrag.getKey());
-				if (LocalDate.now().minusYears(amountYearsInPast).isBefore(dateEintrag)) {
-					historicalData.put(LocalDate.parse(eintrag.getKey()),
-							mapper.convertValue(eintrag.getValue(), HistoricalData.class));
-				}
-			});
-
-		} catch (JsonProcessingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new RuntimeException();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			throw new RuntimeException();
-		}
-		return historicalData;
+	@LogExecutionTime
+	public List<HistoricalDataBtc> getHistoricalDataBTC(LocalDate start, LocalDate end) {
+		ResponseEntity<String> response = requestUtil.createRequest(Endpoints.BTC_DAILY, start, end);
+		JsonNode parseResponse = requestUtil.parseResponse(response, "bpi");
+		Map<LocalDate, HistoricalDataBtc> convert = convert(parseResponse, HistoricalDataBtc.class);
+		List<HistoricalDataBtc> hist = new ArrayList<>();
+		convert.entrySet().iterator().forEachRemaining(value -> {
+			HistoricalDataBtc historicalDataBtc = value.getValue();
+			historicalDataBtc.setDate(value.getKey());
+			hist.add(historicalDataBtc);
+		});
+		return hist;
 	}
 
 	@LogExecutionTime
@@ -124,12 +118,53 @@ public class FinanzService {
 			endDate = LocalDate.now().minusMonths(amount);
 		} else if (TimeSprektrum.YEAR.equals(timeTyp)) {
 			endDate = LocalDate.now().minusYears(amount);
+		} else {
+			throw new FinanzinformationException("Timespektrum is undefined");
 		}
 		// Sehr häslich
 		final LocalDate endDateFinal = endDate;
 		List<Shareprice> sharePricesUntilDate = sharePrices.stream()
 				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(endDateFinal)).collect(Collectors.toList());
 		return sharePricesUntilDate;
+	}
+
+	// The ENDPOINT DIGITAL_CURRENCY_DAILY was inaktivate by
+	// alphavantage.co(06.01.2018)
+	// @LogExecutionTime
+	// public Map<LocalDate, HistoricalDataBtc> getCryptoKurse(String aktienSymbol)
+	// {
+	//
+	// ResponseEntity<String> response = createRequest(Endpoints.BTC_DAILY,
+	// aktienSymbol);
+	// JsonNode parseResponse = parseResponse(response, "Time Series (Digital
+	// Currency Daily)");
+	// Map<LocalDate, HistoricalDataBtc> convertAndFilter =
+	// convertAndFilter(parseResponse,
+	// LocalDate.now().minusYears(amountYearsInPastBTC), HistoricalDataBtc.class);
+	// return convertAndFilter;
+	// }
+
+	private <T> Map<LocalDate, T> convertAndFilter(JsonNode jsonNode, LocalDate filterBisDatum, Class<T> type) {
+		Map<LocalDate, T> historicalData = new LinkedHashMap<LocalDate, T>();
+		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		jsonNode.fields().forEachRemaining(eintrag -> {
+			LocalDate dateEintrag = LocalDate.parse(eintrag.getKey());
+			if (filterBisDatum.isBefore(dateEintrag)) {
+				historicalData.put(LocalDate.parse(eintrag.getKey()),
+						(T) mapper.convertValue(eintrag.getValue(), type));
+			}
+		});
+		return historicalData;
+	}
+
+	private <T> Map<LocalDate, T> convert(JsonNode jsonNode, Class<T> type) {
+		Map<LocalDate, T> convertedResult = new LinkedHashMap<LocalDate, T>();
+		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		jsonNode.fields().forEachRemaining(eintrag -> {
+			convertedResult.put(LocalDate.parse(eintrag.getKey()),
+					(T) mapper.convertValue(eintrag.getValue(), type));
+		});
+		return convertedResult;
 	}
 
 	private List<Shareprice> mittelWerteErmittelnMonat(Map<LocalDate, HistoricalData> aktienPreise, Integer shareId) {

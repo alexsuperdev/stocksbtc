@@ -1,4 +1,4 @@
-package de.crazymonkey.finanzinformation.persistence.entities;
+package de.crazymonkey.finanzinformation.entity;
 
 import java.sql.Timestamp;
 

@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.springframework.data.repository.CrudRepository;
 
-import de.crazymonkey.finanzinformation.persistence.entities.Shareprice;
+import de.crazymonkey.finanzinformation.entity.Shareprice;
 
 public interface SharePriceRepository extends CrudRepository<Shareprice, Integer> {
 
