@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.MockMvc;
 public class FinanzinformationControllerTest {
 
 	@Autowired
-	private MockMvc mvc;
+	private MockMvc mockMvc;
 	//
 	// @Test
 	// public void getSymbol() throws Exception {
@@ -40,15 +40,17 @@ public class FinanzinformationControllerTest {
 
 	@Test
 	public void getSharePrices() throws Exception {
-		this.mvc.perform(get("/getSharePrices").with(httpBasic("financeapp", "financeapp"))
-				.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "3")).andExpect(status().is(200));
+		this.mockMvc
+				.perform(get("/api/getSharePrices").with(httpBasic("financeapp", "financeapp"))
+						.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "3"))
+				.andExpect(status().is(200));
 	}
 
 	@Test
 	public void getBtcHistorical() throws Exception {
 		LocalDate start = LocalDate.of(2017, 10, 1);
 		LocalDate end = LocalDate.of(2017, 12, 1);
-		this.mvc.perform(get("/getBtcHistorical").with(httpBasic("financeapp", "financeapp"))
+		this.mockMvc.perform(get("/api/getBtcHistorical").with(httpBasic("financeapp", "financeapp"))
 				.param("start", start.toString()).param("end", end.toString())).andExpect(status().is(200));
 
 	}

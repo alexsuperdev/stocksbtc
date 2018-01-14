@@ -9,4 +9,6 @@ import de.crazymonkey.finanzinformation.entity.Shareprice;
 public interface SharePriceRepository extends CrudRepository<Shareprice, Integer> {
 
 	List<Shareprice> findByShareId(int shareId);
+	
+	void deleteByShareId(int shareId);
 }

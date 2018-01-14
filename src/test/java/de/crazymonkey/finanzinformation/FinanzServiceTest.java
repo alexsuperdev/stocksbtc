@@ -38,8 +38,16 @@ public class FinanzServiceTest {
 
 	@Test
 	public void getDataShare() {
-		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.MONTH, 3);
-		Assert.assertTrue(dataShare.size() >= 50);
+		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.MONTH, 1);
+		Assert.assertTrue(dataShare.size() >= 10);
+	}
+
+	@Test
+	public void getDataShareNew() {
+		List<Shareprice> dataShare = finanzService.getSharePrices("NKE", TimeSprektrum.MONTH, 1);
+		Assert.assertTrue(dataShare.size() >= 0);
+		Integer shareId = dataShare.get(0).getShareId();
+		finanzService.deleteShareData(shareId);
 	}
 
 	@Test

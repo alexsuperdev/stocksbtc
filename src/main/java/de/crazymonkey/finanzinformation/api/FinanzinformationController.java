@@ -30,13 +30,13 @@ public class FinanzinformationController {
 	@Autowired
 	private FinanzService finanzService;
 
-	@RequestMapping("/getSymbol")
+	@RequestMapping("/api/getSymbol")
 	public AktienSymbol getSymbol(@RequestParam("firmName") String firmName) {
 		AktienSymbol symbolForFirmname = finanzService.getSymbolForFirmname(firmName);
 		return symbolForFirmname;
 	}
 
-	@RequestMapping("/getSharePrices")
+	@RequestMapping("/api/getSharePrices")
 	public List<Shareprice> getSharePrices(@RequestParam("aktienSymbol") String aktienSymbol,
 			@RequestParam String timeTyp, @RequestParam int amount) {
 		List<Shareprice> sharePrices = finanzService.getSharePrices(aktienSymbol, TimeSprektrum.getByValue(timeTyp),
@@ -44,7 +44,7 @@ public class FinanzinformationController {
 		return sharePrices;
 	}
 
-	@RequestMapping("/getBtcHistorical")
+	@RequestMapping("/api/getBtcHistorical")
 	public List<HistoricalDataBtc> getBtcHistorical(@RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate start,
 			@RequestParam @DateTimeFormat(iso = ISO.DATE) LocalDate end) {
 		List<HistoricalDataBtc> historicalDataBTC = finanzService.getHistoricalDataBTC(start, end);

@@ -8,11 +8,8 @@ public enum Endpoints {
 			"https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=#symbol#&outputsize=full&apikey=#key#"),
 	BTC_INTRADAY(
 			"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_INTRADAY&symbol=BTC&market=CNY&apikey=#key#"),
-//	BTC_DAILY(
-//			"https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=#symbol#&market=CNY&apikey=#key#"),
-	BTC_DAILY(
+	BTC_HIST(
 			"https://api.coindesk.com/v1/bpi/historical/close.json"),
-	
 	NEWSZEIT(
 			"http://api.zeit.de/keyword?q=*###*&limit=1");
 	

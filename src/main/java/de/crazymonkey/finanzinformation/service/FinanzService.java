@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -81,7 +83,7 @@ public class FinanzService {
 
 	@LogExecutionTime
 	public List<HistoricalDataBtc> getHistoricalDataBTC(LocalDate start, LocalDate end) {
-		ResponseEntity<String> response = requestUtil.createRequest(Endpoints.BTC_DAILY, start, end);
+		ResponseEntity<String> response = requestUtil.createRequest(Endpoints.BTC_HIST, start, end);
 		JsonNode parseResponse = requestUtil.parseResponse(response, "bpi");
 		Map<LocalDate, HistoricalDataBtc> convert = convert(parseResponse, HistoricalDataBtc.class);
 		List<HistoricalDataBtc> hist = new ArrayList<>();
@@ -95,22 +97,70 @@ public class FinanzService {
 
 	@LogExecutionTime
 	public List<Shareprice> getSharePrices(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
-		Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
-		List<Share> shares = shareRepository.findBySymbol(aktienSymbol);
 		List<Shareprice> sharePrices;
-		if (shares.size() == 0) {
-			AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
-			Share share = new Share();
-			share.setStock(symbolForFirmname.getIndex());
-			share.setSymbol(symbolForFirmname.getSymbol());
-			share.setSharename(symbolForFirmname.getName());
-			Share shareSaved = shareRepository.save(share);
-			historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
-			sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, shareSaved.getId());
-			sharePriceRepository.save(sharePrices);
-		} else {
-			sharePrices = sharePriceRepository.findByShareId(shares.get(0).getId());
-		}
+		sharePrices = getSharePricesPersist(aktienSymbol, timeTyp, amount);
+		return sharePrices;
+	}
+
+	// @LogExecutionTime
+	// public List<Shareprice> getSharePricesPersist(String aktienSymbol,
+	// TimeSprektrum timeTyp, int amount) {
+	// Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
+	// List<Share> shares = shareRepository.findBySymbol(aktienSymbol);
+	// List<Shareprice> sharePrices;
+	// if (shares.size() == 0) {
+	// AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
+	// Share share = new Share();
+	// share.setStock(symbolForFirmname.getIndex());
+	// share.setSymbol(symbolForFirmname.getSymbol());
+	// share.setSharename(symbolForFirmname.getName());
+	// Share shareSaved = shareRepository.save(share);
+	// historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
+	// sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol,
+	// shareSaved.getId());
+	// sharePriceRepository.save(sharePrices);
+	// } else {
+	// sharePrices = sharePriceRepository.findByShareId(shares.get(0).getId());
+	// }
+	// LocalDate endDate = null;
+	// if (TimeSprektrum.WEEK.equals(timeTyp)) {
+	// endDate = LocalDate.now().minusWeeks(amount);
+	// } else if (TimeSprektrum.MONTH.equals(timeTyp)) {
+	// endDate = LocalDate.now().minusMonths(amount);
+	// } else if (TimeSprektrum.YEAR.equals(timeTyp)) {
+	// endDate = LocalDate.now().minusYears(amount);
+	// } else {
+	// throw new FinanzinformationException("Timespektrum is undefined");
+	// }
+	// // Sehr häslich
+	// final LocalDate endDateFinal = endDate;
+	// List<Shareprice> sharePricesUntilDate = sharePrices.stream()
+	// .filter(sharePrice ->
+	// sharePrice.getPriceDate().isAfter(endDateFinal)).collect(Collectors.toList());
+	// return sharePricesUntilDate;
+	// }
+
+	@Transactional
+	public List<Shareprice> getSharePricesPersist(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
+		AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
+		Share share = new Share();
+		share.setStock(symbolForFirmname.getIndex());
+		share.setSymbol(symbolForFirmname.getSymbol());
+		share.setSharename(symbolForFirmname.getName());
+		List<Shareprice> sharePrices = getSharePricesOnDemand(aktienSymbol, timeTyp, amount);
+		Share sharePersist = shareRepository.save(share);
+		sharePrices.stream().forEach(sharePrice -> {
+			sharePrice.setShareId(sharePersist.getId());
+		});
+		sharePriceRepository.save(sharePrices);
+		return sharePrices;
+	}
+
+	private List<Shareprice> getSharePricesOnDemand(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
+		Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
+		historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
+		List<Shareprice> sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, null);
+
 		LocalDate endDate = null;
 		if (TimeSprektrum.WEEK.equals(timeTyp)) {
 			endDate = LocalDate.now().minusWeeks(amount);
@@ -126,6 +176,12 @@ public class FinanzService {
 		List<Shareprice> sharePricesUntilDate = sharePrices.stream()
 				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(endDateFinal)).collect(Collectors.toList());
 		return sharePricesUntilDate;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED)
+	public void deleteShareData(Integer shareId) {
+		sharePriceRepository.deleteByShareId(shareId);
+		shareRepository.delete(shareId);
 	}
 
 	// The ENDPOINT DIGITAL_CURRENCY_DAILY was inaktivate by
@@ -161,8 +217,7 @@ public class FinanzService {
 		Map<LocalDate, T> convertedResult = new LinkedHashMap<LocalDate, T>();
 		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		jsonNode.fields().forEachRemaining(eintrag -> {
-			convertedResult.put(LocalDate.parse(eintrag.getKey()),
-					(T) mapper.convertValue(eintrag.getValue(), type));
+			convertedResult.put(LocalDate.parse(eintrag.getKey()), (T) mapper.convertValue(eintrag.getValue(), type));
 		});
 		return convertedResult;
 	}

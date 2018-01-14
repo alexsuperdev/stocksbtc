@@ -8,7 +8,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
-@ComponentScan(basePackageClasses = { Application.class })
+@ComponentScan(basePackages = "de.crazymonkey.finanzinformation")
 @EnableJpaRepositories(basePackages = "de.crazymonkey.finanzinformation.repository")
 public class Application extends SpringBootServletInitializer {
 
