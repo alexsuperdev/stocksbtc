@@ -8,16 +8,23 @@ import java.time.LocalDate;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.web.servlet.MockMvc;
+
+import de.crazymonkey.finanzinformation.api.FinanzinformationController;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 public class FinanzinformationControllerTest {
+
+	private static final Logger logger = LoggerFactory.getLogger(FinanzinformationControllerTest.class);
 
 	@Autowired
 	private MockMvc mockMvc;
@@ -40,10 +47,19 @@ public class FinanzinformationControllerTest {
 
 	@Test
 	public void getSharePrices() throws Exception {
-		this.mockMvc
+		MockHttpServletResponse response = this.mockMvc
 				.perform(get("/api/getSharePrices").with(httpBasic("financeapp", "financeapp"))
-						.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "3"))
-				.andExpect(status().is(200));
+						.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "1"))
+				.andExpect(status().is(200)).andReturn().getResponse();
+		logger.info(response.getContentAsString());
+	}
+
+	@Test
+	public void getSharePricesNoAuth() throws Exception {
+		MockHttpServletResponse response = this.mockMvc.perform(
+				get("/api/getSharePrices").param("aktienSymbol", "MSFT").param("timeTyp", "w").param("amount", "1"))
+				.andExpect(status().is(200)).andReturn().getResponse();
+		logger.info(response.getContentAsString());
 	}
 
 	@Test

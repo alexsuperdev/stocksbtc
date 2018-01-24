@@ -5,14 +5,18 @@ import java.time.LocalDate;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.validation.constraints.NotNull;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
 import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
+@Table(name = "shareprice")
 public class Shareprice {
 
 	@Id
@@ -28,9 +32,9 @@ public class Shareprice {
 	@CreationTimestamp
 	private Timestamp created;
 
-	@Column(name = "shareid")
-	@NotNull
-	private Integer shareId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "shareid", nullable = false)
+	private Share share;
 
 	public Integer getId() {
 		return id;
@@ -48,14 +52,6 @@ public class Shareprice {
 		this.price = price;
 	}
 
-	public Integer getShareId() {
-		return shareId;
-	}
-
-	public void setShareId(Integer shareId) {
-		this.shareId = shareId;
-	}
-
 	public LocalDate getPriceDate() {
 		return priceDate;
 	}
@@ -64,10 +60,12 @@ public class Shareprice {
 		this.priceDate = priceDate;
 	}
 
-	@Override
-	public String toString() {
-		return "Shareprice [id=" + id + ", price=" + price + ", priceDate=" + priceDate + ", created=" + created
-				+ ", shareId=" + shareId + "]";
+	public Share getShare() {
+		return share;
+	}
+
+	public void setShare(Share share) {
+		this.share = share;
 	}
 
 }

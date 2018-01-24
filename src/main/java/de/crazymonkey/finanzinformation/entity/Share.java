@@ -1,12 +1,16 @@
 package de.crazymonkey.finanzinformation.entity;
 
 import java.sql.Timestamp;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -27,6 +31,9 @@ public class Share {
 	@Column(name = "created")
 	@CreationTimestamp
 	private Timestamp created;
+
+	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "share")
+	private List<Shareprice> sharePrices;
 
 	public Integer getId() {
 		return id;
@@ -60,12 +67,12 @@ public class Share {
 		this.stock = stock;
 	}
 
-	// public LocalDateTime getCreated() {
-	// return created;
-	// }
-	//
-	// public void setCreated(LocalDateTime created) {
-	// this.created = created;
-	// }
+	public List<Shareprice> getSharePrices() {
+		return sharePrices;
+	}
+
+	public void setSharePrices(List<Shareprice> sharePrices) {
+		this.sharePrices = sharePrices;
+	}
 
 }

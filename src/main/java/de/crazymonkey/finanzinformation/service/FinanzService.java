@@ -52,7 +52,7 @@ public class FinanzService {
 	@Autowired
 	private RequestUtil requestUtil;
 
-	private static int amountYearsInPast = 5;
+	private static int amountYearsInPast = 1;
 
 	public AktienSymbol getSymbolForFirmname(String firmenName) {
 
@@ -140,28 +140,52 @@ public class FinanzService {
 	// return sharePricesUntilDate;
 	// }
 
-	@Transactional
+	@Transactional(propagation = Propagation.REQUIRED)
 	public List<Shareprice> getSharePricesPersist(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
-		AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
-		Share share = new Share();
-		share.setStock(symbolForFirmname.getIndex());
-		share.setSymbol(symbolForFirmname.getSymbol());
-		share.setSharename(symbolForFirmname.getName());
-		List<Shareprice> sharePrices = getSharePricesOnDemand(aktienSymbol, timeTyp, amount);
-		Share sharePersist = shareRepository.save(share);
-		sharePrices.stream().forEach(sharePrice -> {
-			sharePrice.setShareId(sharePersist.getId());
-		});
-		sharePriceRepository.save(sharePrices);
+		Share share = shareRepository.getBySymbol(aktienSymbol);
+		List<Shareprice> sharePricesOld = new ArrayList<>();
+		if (share != null) {
+			sharePricesOld = share.getSharePrices();
+		} else {
+			share = new Share();
+			AktienSymbol symbolForFirmname = getSymbolForFirmname(aktienSymbol);
+			share.setStock(symbolForFirmname.getIndex());
+			share.setSymbol(symbolForFirmname.getSymbol());
+			share.setSharename(symbolForFirmname.getName());
+		}
+		LocalDate ermittleDifferent = ermittleDifferent(sharePricesOld, timeTyp, amount);
+		List<Shareprice> sharePrices = getSharePricesOnDemand(aktienSymbol, ermittleDifferent);
+		sharePrices.addAll(sharePricesOld);
+		share.setSharePrices(sharePrices);
+		shareRepository.save(share);
 		return sharePrices;
 	}
 
-	private List<Shareprice> getSharePricesOnDemand(String aktienSymbol, TimeSprektrum timeTyp, int amount) {
+	private LocalDate ermittleDifferent(List<Shareprice> sharePricesOld, TimeSprektrum timeTyp, int amount) {
+		LocalDate beginDate = getBeginDate(timeTyp, amount);
+		for (Shareprice sharePrice : sharePricesOld) {
+			if (sharePrice.getPriceDate().isEqual(beginDate)) {
+				beginDate = beginDate.plusDays(1);
+			}
+		}
+		return beginDate;
+	}
+
+	private List<Shareprice> getSharePricesOnDemand(String aktienSymbol, LocalDate ermittleDifferent) {
 		Map<LocalDate, HistoricalData> historicalDataAktienSymbol;
 		historicalDataAktienSymbol = getHistoricalDataAktienSymbol(aktienSymbol);
-		List<Shareprice> sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, null);
+		Share findBySymbol = shareRepository.getBySymbol(aktienSymbol);
+		List<Shareprice> sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, findBySymbol);
 
+		List<Shareprice> sharePricesUntilDate = sharePrices.stream()
+				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(ermittleDifferent))
+				.collect(Collectors.toList());
+		return sharePricesUntilDate;
+	}
+
+	private LocalDate getBeginDate(TimeSprektrum timeTyp, int amount) {
 		LocalDate endDate = null;
+
 		if (TimeSprektrum.WEEK.equals(timeTyp)) {
 			endDate = LocalDate.now().minusWeeks(amount);
 		} else if (TimeSprektrum.MONTH.equals(timeTyp)) {
@@ -171,11 +195,8 @@ public class FinanzService {
 		} else {
 			throw new FinanzinformationException("Timespektrum is undefined");
 		}
-		// Sehr häslich
-		final LocalDate endDateFinal = endDate;
-		List<Shareprice> sharePricesUntilDate = sharePrices.stream()
-				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(endDateFinal)).collect(Collectors.toList());
-		return sharePricesUntilDate;
+
+		return endDate;
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
@@ -222,7 +243,7 @@ public class FinanzService {
 		return convertedResult;
 	}
 
-	private List<Shareprice> mittelWerteErmittelnMonat(Map<LocalDate, HistoricalData> aktienPreise, Integer shareId) {
+	private List<Shareprice> mittelWerteErmittelnMonat(Map<LocalDate, HistoricalData> aktienPreise, Share share) {
 
 		List<Shareprice> sharePrices = new ArrayList<>();
 		for (Entry<LocalDate, HistoricalData> entry : aktienPreise.entrySet()) {
@@ -230,7 +251,7 @@ public class FinanzService {
 			Float wert = (entry.getValue().getOpen() + entry.getValue().getClose()) / 2;
 			sharePrice.setPrice(wert);
 			sharePrice.setPriceDate(entry.getKey());
-			sharePrice.setShareId(shareId);
+			sharePrice.setShare(share);
 			sharePrices.add(sharePrice);
 		}
 		return sharePrices;

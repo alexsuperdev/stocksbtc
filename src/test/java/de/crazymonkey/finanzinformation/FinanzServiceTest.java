@@ -30,7 +30,7 @@ public class FinanzServiceTest {
 		Assert.assertNotNull(historicalDataAktienSymbol);
 		Assert.assertTrue(historicalDataAktienSymbol.size() > 1);
 
-		HistoricalData historicalData = historicalDataAktienSymbol.get(LocalDate.parse("2016-01-27"));
+		HistoricalData historicalData = historicalDataAktienSymbol.get(LocalDate.parse("2017-01-27"));
 		Assert.assertNotNull(historicalData.getOpen());
 		Assert.assertNotNull(historicalData.getHigh());
 		Assert.assertNotNull(historicalData.getLow());
@@ -38,17 +38,17 @@ public class FinanzServiceTest {
 
 	@Test
 	public void getDataShare() {
-		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.MONTH, 1);
-		Assert.assertTrue(dataShare.size() >= 10);
+		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.WEEK, 1);
+		Assert.assertTrue(dataShare.size() >= 2);
 	}
 
-	@Test
-	public void getDataShareNew() {
-		List<Shareprice> dataShare = finanzService.getSharePrices("NKE", TimeSprektrum.MONTH, 1);
-		Assert.assertTrue(dataShare.size() >= 0);
-		Integer shareId = dataShare.get(0).getShareId();
-		finanzService.deleteShareData(shareId);
-	}
+//	@Test
+//	public void getDataShareNew() {
+//		List<Shareprice> dataShare = finanzService.getSharePrices("NKE", TimeSprektrum.MONTH, 1);
+//		Assert.assertTrue(dataShare.size() >= 0);
+////		Integer shareId = dataShare.get(0).getShareId();
+//		finanzService.deleteShareData(shareId);
+//	}
 
 	@Test
 	public void getHistBTC() {
