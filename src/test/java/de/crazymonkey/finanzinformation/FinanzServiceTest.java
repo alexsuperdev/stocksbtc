@@ -14,11 +14,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import de.crazymonkey.finanzinformation.alphavantage.entity.HistoricalData;
 import de.crazymonkey.finanzinformation.coindesk.entity.HistoricalDataBtc;
 import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
-import de.crazymonkey.finanzinformation.entity.Shareprice;
+import de.crazymonkey.finanzinformation.entity.SharePrice;
 import de.crazymonkey.finanzinformation.service.FinanzService;
+import yahoofinance.Stock;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
+// @ContextConfiguration(classes = Application.class)
 public class FinanzServiceTest {
 
 	@Autowired
@@ -38,17 +40,18 @@ public class FinanzServiceTest {
 
 	@Test
 	public void getDataShare() {
-		List<Shareprice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.WEEK, 1);
+		List<SharePrice> dataShare = finanzService.getSharePrices("MSFT", TimeSprektrum.WEEK, 1);
 		Assert.assertTrue(dataShare.size() >= 2);
 	}
 
-//	@Test
-//	public void getDataShareNew() {
-//		List<Shareprice> dataShare = finanzService.getSharePrices("NKE", TimeSprektrum.MONTH, 1);
-//		Assert.assertTrue(dataShare.size() >= 0);
-////		Integer shareId = dataShare.get(0).getShareId();
-//		finanzService.deleteShareData(shareId);
-//	}
+	// @Test
+	// public void getDataShareNew() {
+	// List<Shareprice> dataShare = finanzService.getSharePrices("NKE",
+	// TimeSprektrum.MONTH, 1);
+	// Assert.assertTrue(dataShare.size() >= 0);
+	//// Integer shareId = dataShare.get(0).getShareId();
+	// finanzService.deleteShareData(shareId);
+	// }
 
 	@Test
 	public void getHistBTC() {
@@ -58,6 +61,13 @@ public class FinanzServiceTest {
 		Assert.assertEquals(159, historicalDataBTC.size());
 	}
 
+	
+//	@Test
+//	public void testYahoo() {
+//		Stock test = finanzService.test();
+//		System.out.println(test);
+//		Assert.assertNotNull(test);
+//	}
 	// @Test
 	// public void getCryptoKurse() {
 	// Map<LocalDate, HistoricalDataBtc> cryptoKurse =

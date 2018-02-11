@@ -17,7 +17,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "shareprice")
-public class Shareprice {
+public class SharePrice {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)

@@ -18,14 +18,14 @@
 		additivity="false">
 		<Appender-ref ref="STDOUT" />
 	</logger>
-	<logger name="org.hibernate.SQL" level="debug"
+	<!-- <logger name="org.hibernate.SQL" level="debug"
 		additivity="false">
 		<Appender-ref ref="STDOUT" />
 	</logger>
 	<logger name="org.hibernate.type" level="trace"
 		additivity="false">
 		<Appender-ref ref="STDOUT" />
-	</logger>
+	</logger> -->
 	<!-- <logger name="org.springframework.web.filter.CommonsRequestLoggingFilter" 
 		level="debug" additivity="false"> <Appender-ref ref="STDOUT"/> </logger> -->
 

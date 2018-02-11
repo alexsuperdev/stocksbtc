@@ -26,7 +26,7 @@ import de.crazymonkey.finanzinformation.coindesk.entity.HistoricalDataBtc;
 import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
 import de.crazymonkey.finanzinformation.entity.ShareMapper;
 import de.crazymonkey.finanzinformation.entity.ShareValueByDate;
-import de.crazymonkey.finanzinformation.entity.Shareprice;
+import de.crazymonkey.finanzinformation.entity.SharePrice;
 import de.crazymonkey.finanzinformation.service.FinanzService;
 
 /**
@@ -43,7 +43,7 @@ public class FinanzinformationController {
 	@Autowired
 	private FinanzService finanzService;
 
-	private static final Logger logger = LoggerFactory.getLogger(FinanzinformationController.class);
+	private static final Logger Logger = LoggerFactory.getLogger(FinanzinformationController.class);
 
 	@RequestMapping(value = "/api/getSymbol", method = RequestMethod.GET)
 	public AktienSymbol getSymbol(@RequestParam("firmName") String firmName) {
@@ -54,10 +54,11 @@ public class FinanzinformationController {
 	@RequestMapping(value = "/api/getSharePrices", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<List<ShareValueByDate>> getSharePrices(@RequestParam("aktienSymbol") String aktienSymbol,
 			@RequestParam String timeTyp, @RequestParam int amount) {
-		List<Shareprice> sharePrices = finanzService.getSharePrices(aktienSymbol, TimeSprektrum.getByValue(timeTyp),
+		List<SharePrice> sharePrices = finanzService.getSharePrices(aktienSymbol, TimeSprektrum.getByValue(timeTyp),
 				amount);
 		List<ShareValueByDate> shareInfo = sharePrices.stream().map(ShareMapper::toShareInfo)
 				.collect(Collectors.toList());
+		shareInfo.stream().sorted((shareinfo1,shareinfo2) ->shareinfo1.getDatum().compareTo(shareinfo2.getDatum()));
 		return ResponseEntity.ok(shareInfo);
 	}
 

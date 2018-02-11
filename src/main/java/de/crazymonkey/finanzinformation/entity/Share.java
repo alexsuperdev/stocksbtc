@@ -33,7 +33,7 @@ public class Share {
 	private Timestamp created;
 
 	@OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "share")
-	private List<Shareprice> sharePrices;
+	private List<SharePrice> sharePrices;
 
 	public Integer getId() {
 		return id;
@@ -67,11 +67,11 @@ public class Share {
 		this.stock = stock;
 	}
 
-	public List<Shareprice> getSharePrices() {
+	public List<SharePrice> getSharePrices() {
 		return sharePrices;
 	}
 
-	public void setSharePrices(List<Shareprice> sharePrices) {
+	public void setSharePrices(List<SharePrice> sharePrices) {
 		this.sharePrices = sharePrices;
 	}
 

@@ -26,7 +26,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	@Value("${security.userpassword}")
 	private String userPassword;
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(SecurityConfiguration.class);
 
 	@Autowired
@@ -47,14 +47,15 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
 	}
 
-	//TODO allowedOrigins as property
-	
+	// TODO allowedOrigins as property
+
 	@Bean
 	public WebMvcConfigurer corsConfigurer() {
 		return new WebMvcConfigurerAdapter() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
-				registry.addMapping("/api/*").allowedOrigins("http://localhost:3000");
+				// registry.addMapping("**/api/**").allowedOrigins("http://localhost:3000");
+				registry.addMapping("/**");
 			}
 		};
 	}

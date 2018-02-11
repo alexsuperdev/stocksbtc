@@ -2,7 +2,7 @@ package de.crazymonkey.finanzinformation.entity;
 
 public class ShareMapper {
 
-	public static ShareValueByDate toShareInfo(Shareprice shareprice) {
+	public static ShareValueByDate toShareInfo(SharePrice shareprice) {
 		ShareValueByDate shareValueByDate = new ShareValueByDate();
 		shareValueByDate.setDatum(shareprice.getPriceDate());
 		shareValueByDate.setPreis(shareprice.getPrice());
