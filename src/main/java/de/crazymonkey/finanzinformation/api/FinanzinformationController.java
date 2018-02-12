@@ -7,8 +7,6 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
@@ -25,8 +23,8 @@ import de.crazymonkey.finanzinformation.alphavantage.entity.AktienSymbol;
 import de.crazymonkey.finanzinformation.coindesk.entity.HistoricalDataBtc;
 import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
 import de.crazymonkey.finanzinformation.entity.ShareMapper;
-import de.crazymonkey.finanzinformation.entity.ShareValueByDate;
 import de.crazymonkey.finanzinformation.entity.SharePrice;
+import de.crazymonkey.finanzinformation.entity.ShareValueByDate;
 import de.crazymonkey.finanzinformation.service.FinanzService;
 
 /**
@@ -43,8 +41,6 @@ public class FinanzinformationController {
 	@Autowired
 	private FinanzService finanzService;
 
-	private static final Logger Logger = LoggerFactory.getLogger(FinanzinformationController.class);
-
 	@RequestMapping(value = "/api/getSymbol", method = RequestMethod.GET)
 	public AktienSymbol getSymbol(@RequestParam("firmName") String firmName) {
 		AktienSymbol symbolForFirmname = finanzService.getSymbolForFirmname(firmName);
@@ -58,7 +54,7 @@ public class FinanzinformationController {
 				amount);
 		List<ShareValueByDate> shareInfo = sharePrices.stream().map(ShareMapper::toShareInfo)
 				.collect(Collectors.toList());
-		shareInfo.stream().sorted((shareinfo1,shareinfo2) ->shareinfo1.getDatum().compareTo(shareinfo2.getDatum()));
+		shareInfo.stream().sorted((shareinfo1, shareinfo2) -> shareinfo1.getDatum().compareTo(shareinfo2.getDatum()));
 		return ResponseEntity.ok(shareInfo);
 	}
 

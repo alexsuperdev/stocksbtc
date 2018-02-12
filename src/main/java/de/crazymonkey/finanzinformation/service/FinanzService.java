@@ -123,16 +123,22 @@ public class FinanzService {
 		Pair<LocalDate, List<SharePrice>> ermittleDatumNoDataFor = ermittleDatumNoDataFor(aktie.getSharePrices(), from,
 				to);
 		LocalDate dateFromNoData = ermittleDatumNoDataFor.getFirst();
-		Calendar newFrom = new GregorianCalendar(dateFromNoData.getYear(), dateFromNoData.getMonthValue(),
-				dateFromNoData.getDayOfMonth());
-		List<HistoricalQuote> stockHistoricalPrices = yahooServiceWrapper.getStockHistoricalPrices(aktienSymbol,
-				interval, newFrom, to);
-		List<SharePrice> sharePriceYahoo = stockHistoricalPrices.stream().map(sharePricesMapper::fromYahoo)
-				.collect(Collectors.toList());
-		aktie.getSharePrices().addAll(sharePriceYahoo);
-		shareRepository.save(aktie);
-		sharePriceYahoo.addAll(ermittleDatumNoDataFor.getSecond());
-		return sharePriceYahoo;
+		LocalDate dateTO = LocalDate.of(to.get(Calendar.YEAR), to.get(Calendar.MONTH) + 1,
+				to.get(Calendar.DAY_OF_MONTH));
+		if (dateFromNoData.isEqual(dateTO)) {
+			return ermittleDatumNoDataFor.getSecond();
+		} else {
+			Calendar newFrom = new GregorianCalendar(dateFromNoData.getYear(), dateFromNoData.getMonthValue(),
+					dateFromNoData.getDayOfMonth());
+			List<HistoricalQuote> stockHistoricalPrices = yahooServiceWrapper.getStockHistoricalPrices(aktienSymbol,
+					interval, newFrom, to);
+			List<SharePrice> sharePriceYahoo = stockHistoricalPrices.stream().map(sharePricesMapper::fromYahoo)
+					.collect(Collectors.toList());
+			aktie.getSharePrices().addAll(sharePriceYahoo);
+			shareRepository.save(aktie);
+			sharePriceYahoo.addAll(ermittleDatumNoDataFor.getSecond());
+			return sharePriceYahoo;
+		}
 	}
 
 	@Transactional(propagation = Propagation.REQUIRED)
