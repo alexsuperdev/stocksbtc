@@ -1,5 +1,9 @@
 package de.crazymonkey.finanzinformation;
 
+import java.util.TimeZone;
+
+import javax.annotation.PostConstruct;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -11,6 +15,11 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @ComponentScan(basePackages = "de.crazymonkey.finanzinformation")
 @EnableJpaRepositories(basePackages = "de.crazymonkey.finanzinformation.repository")
 public class Application extends SpringBootServletInitializer {
+
+	@PostConstruct
+	void started() {
+		TimeZone.setDefault(TimeZone.getTimeZone("TimeZone"));
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);

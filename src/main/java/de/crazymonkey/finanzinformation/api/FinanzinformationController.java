@@ -2,6 +2,8 @@ package de.crazymonkey.finanzinformation.api;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,11 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.crazymonkey.finanzinformation.alphavantage.entity.AktienSymbol;
 import de.crazymonkey.finanzinformation.coindesk.entity.HistoricalDataBtc;
-import de.crazymonkey.finanzinformation.constants.TimeSprektrum;
 import de.crazymonkey.finanzinformation.entity.ShareMapper;
 import de.crazymonkey.finanzinformation.entity.SharePrice;
 import de.crazymonkey.finanzinformation.entity.ShareValueByDate;
 import de.crazymonkey.finanzinformation.service.FinanzService;
+import yahoofinance.histquotes.Interval;
 
 /**
  * Public API for call from Front End. All request should have basicAuth
@@ -47,13 +49,31 @@ public class FinanzinformationController {
 		return symbolForFirmname;
 	}
 
+	// @RequestMapping(value = "/api/getSharePrices", method =
+	// RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	// public ResponseEntity<List<ShareValueByDate>>
+	// getSharePrices(@RequestParam("aktienSymbol") String aktienSymbol,
+	// @RequestParam String timeTyp, @RequestParam int amount) {
+	// List<SharePrice> sharePrices = finanzService.getSharePrices(aktienSymbol,
+	// TimeSprektrum.getByValue(timeTyp),
+	// amount);
+	// List<ShareValueByDate> shareInfo =
+	// sharePrices.stream().map(ShareMapper::toShareInfo)
+	// .collect(Collectors.toList());
+	// shareInfo.stream().sorted((shareinfo1, shareinfo2) ->
+	// shareinfo1.getDatum().compareTo(shareinfo2.getDatum()));
+	// return ResponseEntity.ok(shareInfo);
+	// }
 	@RequestMapping(value = "/api/getSharePrices", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<List<ShareValueByDate>> getSharePrices(@RequestParam("aktienSymbol") String aktienSymbol,
-			@RequestParam String timeTyp, @RequestParam int amount) {
-		List<SharePrice> sharePrices = finanzService.getSharePrices(aktienSymbol, TimeSprektrum.getByValue(timeTyp),
-				amount);
-		List<ShareValueByDate> shareInfo = sharePrices.stream().map(ShareMapper::toShareInfo)
-				.collect(Collectors.toList());
+			@RequestParam(value = "fromDate") @DateTimeFormat(pattern = "dd.MM.yyyy") Date fromDate,
+			@RequestParam(value = "toDate") @DateTimeFormat(pattern = "dd.MM.yyyy") Date toDate) {
+		Calendar fromDateConverted = Calendar.getInstance();
+		fromDateConverted.setTime(fromDate);
+		Calendar toDateConverted = Calendar.getInstance();
+		toDateConverted.setTime(toDate);
+		List<SharePrice> sharePrices = finanzService.getSharePricesYahoo(aktienSymbol, Interval.DAILY, fromDateConverted, toDateConverted);
+		List<ShareValueByDate> shareInfo = sharePrices.stream().map(ShareMapper::toShareInfo).collect(Collectors.toList());
 		shareInfo.stream().sorted((shareinfo1, shareinfo2) -> shareinfo1.getDatum().compareTo(shareinfo2.getDatum()));
 		return ResponseEntity.ok(shareInfo);
 	}

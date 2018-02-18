@@ -5,14 +5,18 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.util.Pair;
@@ -69,13 +73,14 @@ public class FinanzService {
 
 	private static int amountYearsInPast = 1;
 
+	private static final Logger Logger = LoggerFactory.getLogger(FinanzService.class);
+
 	public AktienSymbol getSymbolForFirmname(String firmenName) {
 
 		String urlFirmenSymbol = Endpoints.AKTIENSYMBOL.getUrl().replace("####", firmenName);
 		ResponseEntity<String> response = restTemplate.getForEntity(urlFirmenSymbol, String.class);
 		String serverResponse = response.getBody();
-		serverResponse = serverResponse.substring(serverResponse.indexOf("symbol") - 2,
-				serverResponse.indexOf("}") + 1);
+		serverResponse = serverResponse.substring(serverResponse.indexOf("symbol") - 2, serverResponse.indexOf("}") + 1);
 		ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		try {
 			AktienSymbol aktienSymbol = mapper.readValue(serverResponse, AktienSymbol.class);
@@ -90,8 +95,7 @@ public class FinanzService {
 	public Map<LocalDate, HistoricalData> getHistoricalDataAktienSymbol(String aktienSymbol) {
 		ResponseEntity<String> response = requestUtil.createRequest(Endpoints.HISTORICALDATA, aktienSymbol);
 		JsonNode parseResponse = requestUtil.parseResponse(response, "Time Series (Daily)");
-		Map<LocalDate, HistoricalData> parseJSONFilter = convertAndFilter(parseResponse,
-				LocalDate.now().minusYears(amountYearsInPast), HistoricalData.class);
+		Map<LocalDate, HistoricalData> parseJSONFilter = convertAndFilter(parseResponse, LocalDate.now().minusYears(amountYearsInPast), HistoricalData.class);
 		return parseJSONFilter;
 	}
 
@@ -120,23 +124,21 @@ public class FinanzService {
 	public List<SharePrice> getSharePricesYahoo(String aktienSymbol, Interval interval, Calendar from, Calendar to) {
 
 		Share aktie = shareRepository.getBySymbol(aktienSymbol);
-		Pair<LocalDate, List<SharePrice>> ermittleDatumNoDataFor = ermittleDatumNoDataFor(aktie.getSharePrices(), from,
-				to);
+		aktie.getSharePrices().sort((SharePrice a, SharePrice b) -> a.getPriceDate().compareTo(b.getPriceDate()));
+
+		Logger.info("search for date that not in DB yet for from {}", from);
+		Pair<LocalDate, List<SharePrice>> ermittleDatumNoDataFor = ermittleDatumNoDataFor(aktie.getSharePrices(), from, to);
 		LocalDate dateFromNoData = ermittleDatumNoDataFor.getFirst();
-		LocalDate dateTO = LocalDate.of(to.get(Calendar.YEAR), to.get(Calendar.MONTH) + 1,
-				to.get(Calendar.DAY_OF_MONTH));
-		if (dateFromNoData.isEqual(dateTO)) {
+		LocalDate dateTO = LocalDate.of(to.get(Calendar.YEAR), to.get(Calendar.MONTH) + 1, to.get(Calendar.DAY_OF_MONTH));
+		if (dateFromNoData.isEqual(dateTO) || dateFromNoData.isAfter(dateTO)) {
 			return ermittleDatumNoDataFor.getSecond();
 		} else {
-			Calendar newFrom = new GregorianCalendar(dateFromNoData.getYear(), dateFromNoData.getMonthValue(),
-					dateFromNoData.getDayOfMonth());
-			List<HistoricalQuote> stockHistoricalPrices = yahooServiceWrapper.getStockHistoricalPrices(aktienSymbol,
-					interval, newFrom, to);
-			List<SharePrice> sharePriceYahoo = stockHistoricalPrices.stream().map(sharePricesMapper::fromYahoo)
-					.collect(Collectors.toList());
-			aktie.getSharePrices().addAll(sharePriceYahoo);
-			shareRepository.save(aktie);
-			sharePriceYahoo.addAll(ermittleDatumNoDataFor.getSecond());
+			Calendar newFrom = new GregorianCalendar(dateFromNoData.getYear(), dateFromNoData.getMonthValue() - 1, dateFromNoData.getDayOfMonth());
+			List<HistoricalQuote> stockHistoricalPrices = yahooServiceWrapper.getStockHistoricalPrices(aktienSymbol, interval, newFrom, to);
+			Stream<HistoricalQuote> stockHistoricalPricesFiltered = stockHistoricalPrices.stream().filter(stockPrice -> stockPrice.getOpen() != null);
+			List<SharePrice> sharePriceYahoo = stockHistoricalPricesFiltered.map(sharePricesMapper::fromYahoo).collect(Collectors.toList());
+			sharePriceYahoo.sort((a, b) -> a.getPriceDate().compareTo(b.getPriceDate()));
+			sharePriceRepository.save(sharePriceYahoo);
 			return sharePriceYahoo;
 		}
 	}
@@ -182,23 +184,31 @@ public class FinanzService {
 		return beginDate;
 	}
 
-	private Pair<LocalDate, List<SharePrice>> ermittleDatumNoDataFor(List<SharePrice> sharePricesOld, Calendar from,
-			Calendar to) {
-		LocalDate dateFrom = LocalDate.of(from.get(Calendar.YEAR), from.get(Calendar.MONTH) + 1,
-				from.get(Calendar.DAY_OF_MONTH));
-		LocalDate dateTo = LocalDate.of(to.get(Calendar.YEAR), to.get(Calendar.MONTH) + 1,
-				to.get(Calendar.DAY_OF_MONTH));
-		Stream<SharePrice> sharePricesInRange = sharePricesOld.stream().filter(
-				share -> share.getPriceDate().compareTo(dateFrom) > 0 && share.getPriceDate().compareTo(dateTo) <= 0);
+	private Pair<LocalDate, List<SharePrice>> ermittleDatumNoDataFor(List<SharePrice> sharePricesOld, Calendar from, Calendar to) {
+		final LocalDate dateFrom = LocalDate.of(from.get(Calendar.YEAR), from.get(Calendar.MONTH) + 1, from.get(Calendar.DAY_OF_MONTH));
+		final LocalDate dateTo = LocalDate.of(to.get(Calendar.YEAR), to.get(Calendar.MONTH) + 1, to.get(Calendar.DAY_OF_MONTH));
 
-		sharePricesInRange.forEachOrdered(sharePrice -> {
-			if (sharePrice.getPriceDate().compareTo(dateFrom) == 0) {
-				if (!(dateFrom.getDayOfWeek() == DayOfWeek.SATURDAY || dateFrom.getDayOfWeek() == DayOfWeek.SUNDAY)) {
-					dateFrom.plusDays(1);
-				}
-			}
-		});
-		return Pair.of(dateFrom, sharePricesInRange.collect(Collectors.toList()));
+		List<SharePrice> sharePriceFiltered = sharePricesOld.stream()
+				.filter(sharePrice ->
+				(sharePrice.getPriceDate().isAfter(dateFrom) || sharePrice.getPriceDate().isEqual(dateFrom))  
+				&& (sharePrice.getPriceDate().isBefore(dateTo) || sharePrice.getPriceDate().isEqual(dateTo))).collect(Collectors.toList());
+		Optional<SharePrice> maxPriceDate = sharePriceFiltered.stream().max(Comparator.comparing(SharePrice::getPriceDate));
+		LocalDate biggestPriceDateFounded;
+		if (maxPriceDate.isPresent()) {
+			biggestPriceDateFounded = maxPriceDate.get().getPriceDate().plusDays(1);
+		} else {
+			biggestPriceDateFounded = dateFrom;
+		}
+		if (biggestPriceDateFounded.getDayOfWeek() == DayOfWeek.SUNDAY) {
+			biggestPriceDateFounded = biggestPriceDateFounded.plusDays(1);
+		} else if (biggestPriceDateFounded.getDayOfWeek() == DayOfWeek.SATURDAY) {
+			biggestPriceDateFounded = biggestPriceDateFounded.plusDays(2);
+		}
+		if (sharePriceFiltered.size() > 0) {
+			return Pair.of(biggestPriceDateFounded, sharePriceFiltered);
+		} else {
+			return Pair.of(biggestPriceDateFounded, new ArrayList<>());
+		}
 	}
 
 	private LocalDate getBeginDate(TimeSprektrum timeTyp, int amount) {
@@ -223,8 +233,7 @@ public class FinanzService {
 		Share findBySymbol = shareRepository.getBySymbol(aktienSymbol);
 		List<SharePrice> sharePrices = mittelWerteErmittelnMonat(historicalDataAktienSymbol, findBySymbol);
 
-		List<SharePrice> sharePricesUntilDate = sharePrices.stream()
-				.filter(sharePrice -> sharePrice.getPriceDate().isAfter(ermittleDifferent))
+		List<SharePrice> sharePricesUntilDate = sharePrices.stream().filter(sharePrice -> sharePrice.getPriceDate().isAfter(ermittleDifferent))
 				.collect(Collectors.toList());
 		return sharePricesUntilDate;
 	}
@@ -238,7 +247,8 @@ public class FinanzService {
 	// The ENDPOINT DIGITAL_CURRENCY_DAILY was inaktivate by
 	// alphavantage.co(06.01.2018)
 	// @LogExecutionTime
-	// public Map<LocalDate, HistoricalDataBtc> getCryptoKurse(String aktienSymbol)
+	// public Map<LocalDate, HistoricalDataBtc> getCryptoKurse(String
+	// aktienSymbol)
 	// {
 	//
 	// ResponseEntity<String> response = createRequest(Endpoints.BTC_DAILY,
@@ -247,7 +257,8 @@ public class FinanzService {
 	// Currency Daily)");
 	// Map<LocalDate, HistoricalDataBtc> convertAndFilter =
 	// convertAndFilter(parseResponse,
-	// LocalDate.now().minusYears(amountYearsInPastBTC), HistoricalDataBtc.class);
+	// LocalDate.now().minusYears(amountYearsInPastBTC),
+	// HistoricalDataBtc.class);
 	// return convertAndFilter;
 	// }
 
@@ -257,8 +268,7 @@ public class FinanzService {
 		jsonNode.fields().forEachRemaining(eintrag -> {
 			LocalDate dateEintrag = LocalDate.parse(eintrag.getKey());
 			if (filterBisDatum.isBefore(dateEintrag)) {
-				historicalData.put(LocalDate.parse(eintrag.getKey()),
-						(T) mapper.convertValue(eintrag.getValue(), type));
+				historicalData.put(LocalDate.parse(eintrag.getKey()), (T) mapper.convertValue(eintrag.getValue(), type));
 			}
 		});
 		return historicalData;

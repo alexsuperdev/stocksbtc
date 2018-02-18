@@ -1,6 +1,7 @@
 package de.crazymonkey.finanzinformation.service;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.List;
 
@@ -22,12 +23,16 @@ public class YahooServiceWrapper {
 
 		Stock stockInfo = null;
 		List<HistoricalQuote> history = null;
+		SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
+		LOG.info(" requesting yahoo für den aktiensymbol {} von {} bis {}", aktienSymbol, sdf.format(from.getTime()), sdf.format(to.getTime()));
 		try {
+			from.add(Calendar.DAY_OF_MONTH, 1);
+			to.add(Calendar.DAY_OF_MONTH, 1);
 			stockInfo = YahooFinance.get(aktienSymbol, from, to, interval);
 			history = stockInfo.getHistory();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			LOG.error("Fehler beim Aufruf von Yahoo API {} ", e.getLocalizedMessage());
+			LOG.error("Fehler beim Aufruf von Yahoo API {} ", e.getMessage());
 		}
 		return history;
 	}

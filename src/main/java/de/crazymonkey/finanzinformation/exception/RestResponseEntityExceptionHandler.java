@@ -1,49 +1,46 @@
 package de.crazymonkey.finanzinformation.exception;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class RestResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
 
-	private static final Logger logger = LoggerFactory.getLogger(RestResponseEntityExceptionHandler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(RestResponseEntityExceptionHandler.class);
+	//
+	// @ExceptionHandler(value = {IllegalArgumentException.class})
+	// public ResponseEntity<Object>
+	// handleNotFoundException(IllegalArgumentException e, HttpServletResponse
+	// response) {
+	// return ResponseEntity.badRequest().body(e.getMessage());
+	// }
 
-	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-	@ExceptionHandler(Throwable.class)
-	protected ModelAndView defaultErrorHandler(HttpServletRequest req, Exception e) throws Exception {
-		// If the exception is annotated with @ResponseStatus rethrow it and let
-		// the framework handle it - like the OrderNotFoundException example
-		// at the start of this post.
-		// AnnotationUtils is a Spring Framework utility class.
-		if (AnnotationUtils.findAnnotation(e.getClass(), ResponseStatus.class) != null)
-			throw e;
-		logger.error(e.getMessage());
-		// Otherwise setup and send the user to a default error-view.
-		ModelAndView mav = new ModelAndView();
-		mav.addObject("exception", e);
-		mav.addObject("url", req.getRequestURL());
-		// mav.setViewName(DEFAULT_ERROR_VIEW);
-		return mav;
+	@ExceptionHandler(value = {MethodArgumentTypeMismatchException.class})
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	public ResponseEntity<String> constraintViolationException(MethodArgumentTypeMismatchException ex) {
+		LOG.error(ex.getMessage());
+		return ResponseEntity.badRequest().body(ex.getCause().getMessage());
 	}
 
-	@ExceptionHandler(value = { IllegalArgumentException.class, IllegalStateException.class })
-	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	public ResponseEntity<String> exceptionHandler(Exception ex) {
-		logger.error(ex.getMessage());
-		// ErrorResponse error = new ErrorResponse();
-		// error.setErrorCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-		// error.setMessage("Please contact your administrator");
-		return new ResponseEntity<String>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+	// @ExceptionHandler(value = { NoHandlerFoundException.class })
+	// @ResponseStatus(HttpStatus.NOT_FOUND)
+	// public ResponseEntity<String> noHandlerFoundException(Exception ex) {
+	// LOG.error(ex.getCause().toString());
+	// return ResponseEntity.badRequest().body(ex.getMessage());
+	// }
+
+	@ExceptionHandler(value = {Exception.class})
+	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+	public ResponseEntity<String> unknownException(Exception ex) {
+		LOG.error(ex.getMessage());
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
 	}
 
 }

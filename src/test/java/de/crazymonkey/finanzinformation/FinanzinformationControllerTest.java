@@ -47,7 +47,10 @@ public class FinanzinformationControllerTest {
 	public void getSharePrices() throws Exception {
 		MockHttpServletResponse response = this.mockMvc
 				.perform(get("/api/getSharePrices").with(httpBasic("financeapp", "financeapp"))
-						.param("aktienSymbol", "MSFT").param("timeTyp", "m").param("amount", "1"))
+						.param("aktienSymbol", "MSFT")
+						.param("fromDate", "10.02.2018")
+						.param("toDate", "15.02.2018")
+						)
 				.andExpect(status().is(200)).andReturn().getResponse();
 		logger.info(response.getContentAsString());
 	}
